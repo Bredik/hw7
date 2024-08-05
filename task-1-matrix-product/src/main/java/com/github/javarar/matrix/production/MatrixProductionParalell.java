@@ -1,33 +1,47 @@
 package com.github.javarar.matrix.production;
 
 import java.util.Arrays;
+import java.util.concurrent.CompletableFuture;
 
-public class MatrixProduction {
+public class MatrixProductionParalell {
 
-    public static String product(Matrix a, Matrix b) {
+    public static String productParalell(Matrix a, Matrix b) {
         var s = Arrays.deepToString(multiply(a.getMatrix(), b.getMatrix()));
         System.out.println("Посчитали");
         return s;
     }
 
     public static int[][] multiply(int[][] a, int[][] b) {
-        //a[0].length - кол-во столбцов (длина строки)
-        //b.length - кол-во строк  (длина столбца)
         if (a[0].length != b.length) {
             System.err.println("Эти матрицы нельзя перемножить");
             return null;
         }
 
-        final var matrixM = new int[a.length][b[0].length];
-        for (var i = 0; i < matrixM.length; i++) {
-            for (var j = 0; j < matrixM[0].length; j++) {
-                matrixM[i][j] = 0;
-                for (var k = 0; k < a[0].length; k++) {
-                    matrixM[i][j] += a[i][k] * b[k][j];
-                }
+        final var rezult = new int[a.length][b[0].length];
+
+        for (var i = 0; i < rezult.length; i++) {
+            for (var j = 0; j < rezult[0].length; j++) {
+                int finalI = i;
+                int finalJ = j;
+                CompletableFuture.runAsync(() -> {
+                    rezult[finalI][finalJ] = 0;
+                    var tmp = getTmpMatrix(b, finalJ);
+                    for (var k = 0; k < a[0].length; k++) {
+                        rezult[finalI][finalJ] += a[finalI][k] * tmp[k];
+                    }
+                });
+
             }
         }
-        return matrixM;
+        return rezult;
+    }
+
+    static int[] getTmpMatrix(int[][] b, int j) {
+        int[] tmp = new int[b.length];
+        for (var i = 0; i < tmp.length; i++) {
+            tmp[i] = b[i][j];
+        }
+        return tmp;
     }
 
     public static class Matrix {
